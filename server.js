@@ -191,6 +191,116 @@ db.run(
   }
 );
 
+
+db.run(
+  "create table if not exists signup (id INTEGER PRIMARY KEY AUTOINCREMENT,Name TEXT,Email TEXT UNIQUE, Password TEXT,Confirmpassword TEXT,phoneNo TEXT)",
+  (err) => {
+    if (err) {
+      console.log(err.message);
+    } else {
+      console.log("Signup table created");
+    }
+  }
+);
+
+// Define the POST route for '/signupdetails'
+app.post('/signupdetails', (req, res) => {
+  const newSignup = {
+    Name: req.body.Name,
+    Email: req.body.Email,
+    Password: req.body.Password,
+    Confirmpassword: req.body.Confirmpassword,
+    phoneNo: req.body.phoneNo,
+  };
+
+  // Check if the user already exists
+  db.get('SELECT * FROM signup WHERE Email = ?', newSignup.Email, (err, row) => {
+    if (err) {
+      console.log(err);
+      res.status(500).json({
+        error: 'Internal server error',
+        status: 'failed'
+      });
+      return;
+    }
+
+    if (!row) { // If no user found, create a new user
+      db.run('INSERT INTO signup (Name, Email, Password, Confirmpassword, phoneNo) VALUES (?, ?, ?, ?, ?)',
+        [newSignup.Name, newSignup.Email, newSignup.Password, newSignup.Confirmpassword, newSignup.phoneNo],
+        function (err) {
+          if (err) {
+            console.log(err);
+            res.status(500).json({
+              error: 'Internal server error',
+              status: 'failed'
+            });
+          } else {
+            res.status(200).json({
+              message: 'User signed up successfully',
+              status: 'success',
+              Email: newSignup.Email,
+              data: {
+                id: this.lastID,
+                ...newSignup
+              }
+            });
+          }
+        });
+    } else {
+      res.status(409).json({
+        message: 'User already exists',
+        status: 'failed'
+      });
+    }
+  });
+});
+
+
+// Assuming you have already set up the SQLite database and table as mentioned in the previous code.
+
+// Define the POST route for '/logindetails'
+app.post('/logindetails', (req, res) => {
+  const loginDetails = {
+    Email: req.body.Email,
+    Password: req.body.Password
+  };
+
+  // Find the user based on the provided email and password
+  db.get('SELECT * FROM signup WHERE Email = ? AND Password = ?', [loginDetails.Email, loginDetails.Password], (err, row) => {
+    if (err) {
+      console.log(err);
+      res.status(500).json({
+        error: 'Internal server error',
+        status: 'failed'
+      });
+      return;
+    }
+
+    if (row) { // If matching data is found, return login successful
+      res.status(200).json({
+        message: 'Login Successful',
+        data: row
+      });
+    } else {
+      res.status(404).json({
+        message: 'No matching data found',
+        status: 'failed'
+      });
+    }
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
 app.post("/post", (req, res) => {
   const { Name, Image, Image2, Price, Category, Url, Description } = req.body;
 
@@ -219,6 +329,26 @@ app.post("/post", (req, res) => {
     }
   });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 app.get("/getdetails", (req, res) => { 
